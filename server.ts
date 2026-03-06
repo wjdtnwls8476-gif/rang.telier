@@ -70,6 +70,124 @@ async function startServer() {
       console.log(">>> LR Style triggers added.");
     }
 
+    // Migration for art_style triggers
+    const hasArtStyleTriggers = db.prepare("SELECT count(*) as count FROM category_triggers WHERE target_category = 'art_style'").get() as { count: number };
+    if (hasArtStyleTriggers.count === 0) {
+      const insertTrigger = db.prepare("INSERT INTO category_triggers (trigger_category, trigger_value, target_category) VALUES (?, ?, ?)");
+      insertTrigger.run('design', '자석젤', 'art_style');
+      insertTrigger.run('design', '시럽 네일', 'art_style');
+      insertTrigger.run('design', '치크 네일', 'art_style');
+      insertTrigger.run('design', '드로잉', 'art_style');
+      insertTrigger.run('design', '캐릭터네일', 'art_style');
+      console.log(">>> Art Style triggers added.");
+    }
+
+    // Migration for art_style elements
+    const hasArtStyleElements = db.prepare("SELECT count(*) as count FROM nail_elements WHERE category = 'art_style'").get() as { count: number };
+    if (hasArtStyleElements.count === 0) {
+      const insert = db.prepare("INSERT INTO nail_elements (category, name, value) VALUES (?, ?, ?)");
+      insert.run('art_style', 'Y2K', 'Y2K');
+      insert.run('art_style', '발레코어', 'Balletcore');
+      insert.run('art_style', '오피스코어', 'Officecore');
+      console.log(">>> Art Style elements added.");
+    }
+
+    // Migration for new base colors
+    const newBaseColors = [
+      { name: '레몬 옐로우', value: '#FFF700' },
+      { name: '아쿠아 블루', value: '#00FFFF' },
+      { name: '라일락', value: '#DCD0FF' },
+      { name: '피스타치오', value: '#93C572' },
+      { name: '살구색', value: '#FBCEB1' },
+      { name: '연그레이', value: '#E5E5E5' },
+      { name: '딥 그린', value: '#013220' },
+      { name: '네이비', value: '#000080' },
+      { name: '초콜릿 브라운', value: '#7B3F00' },
+      { name: '와인 레드', value: '#722F37' },
+      { name: '올리브', value: '#808000' },
+      { name: '테라코타', value: '#E2725B' },
+      { name: '샌드', value: '#C2B280' },
+      { name: '차콜', value: '#36454F' }
+    ];
+
+    newBaseColors.forEach(color => {
+      const exists = db.prepare("SELECT id FROM nail_elements WHERE category = 'base_color' AND name = ?").get(color.name);
+      if (!exists) {
+        db.prepare("INSERT INTO nail_elements (category, name, value) VALUES (?, ?, ?)").run('base_color', color.name, color.value);
+        db.prepare("INSERT INTO nail_elements (category, name, value) VALUES (?, ?, ?)").run('base_color_right', color.name, color.value);
+      }
+    });
+    console.log(">>> New base colors migration completed.");
+
+    // Migration for basic nail elements (length, shape, design, etc.)
+    const basicCategories = [
+      { category: 'length', name: '베리 숏 (Very Short)', value: 'Very Short' },
+      { category: 'length', name: '숏 (Short)', value: 'Short' },
+      { category: 'length', name: '미디엄 (Medium)', value: 'Medium' },
+      { category: 'length', name: '롱 (Long)', value: 'Long' },
+      { category: 'length', name: '익스텐션 (Extension)', value: 'Extension' },
+      { category: 'shape', name: '오발', value: 'Oval' },
+      { category: 'shape', name: '스퀘어', value: 'Square' },
+      { category: 'shape', name: '아몬드', value: 'Almond' },
+      { category: 'shape', name: '발레리나', value: 'Ballerina' },
+      { category: 'shape', name: '코핀', value: 'Coffin' },
+      { category: 'shape', name: '라운드', value: 'Round' },
+      { category: 'shape', name: '포인티드', value: 'Pointed' },
+      { category: 'design', name: '자석젤', value: 'Magnet Gel' },
+      { category: 'design', name: '시럽 네일', value: 'Syrup' },
+      { category: 'design', name: '치크 네일', value: 'Cheek' },
+      { category: 'design', name: '드로잉', value: 'Drawing' },
+      { category: 'design', name: '프렌치', value: 'French' },
+      { category: 'design', name: '그라데이션', value: 'Gradation' },
+      { category: 'design', name: '풀컬러', value: 'Full Color' },
+      { category: 'design', name: '마블', value: 'Marble' },
+      { category: 'finish', name: '유광 (Glossy)', value: 'Glossy' },
+      { category: 'finish', name: '무광 (Matte)', value: 'Matte' },
+      { category: 'color_tone', name: '웜톤', value: 'Warm' },
+      { category: 'color_tone', name: '쿨톤', value: 'Cool' },
+      { category: 'color_tone', name: '뉴트럴', value: 'Neutral' },
+      { category: 'parts_yn', name: '있음', value: 'Yes' },
+      { category: 'parts_yn', name: '없음', value: 'No' },
+      { category: 'lr_style', name: '대칭', value: 'Symmetric' },
+      { category: 'lr_style', name: '비대칭 (언밸런스)', value: 'Asymmetric' },
+      { category: 'mood', name: '러블리', value: 'Lovely' },
+      { category: 'mood', name: '힙한', value: 'Hip' },
+      { category: 'mood', name: '청순한', value: 'Pure' },
+      { category: 'mood', name: '시크한', value: 'Chic' },
+      { category: 'mood', name: '귀여운', value: 'Cute' },
+      { category: 'concept', name: '빈티지', value: 'Vintage' },
+      { category: 'concept', name: '키치', value: 'Kitsch' },
+      { category: 'concept', name: '미니멀', value: 'Minimal' },
+      { category: 'concept', name: '화려한', value: 'Fancy' },
+      { category: 'concept', name: '우아한', value: 'Elegant' },
+      { category: 'concept', name: '오피스코어', value: 'Officecore' },
+      { category: 'concept', name: '발레코어', value: 'Balletcore' },
+      { category: 'art_style', name: 'Y2K', value: 'Y2K' },
+      { category: 'art_style', name: '발레코어', value: 'Balletcore' },
+      { category: 'art_style', name: '오피스코어', value: 'Officecore' },
+      { category: 'art_style', name: '고스', value: 'Goth' },
+      { category: 'art_style', name: '빈티지', value: 'Vintage' },
+      { category: 'art_style', name: '미니멀', value: 'Minimal' },
+      { category: 'parts_detail', name: '리본', value: 'Ribbon' },
+      { category: 'parts_detail', name: '하트', value: 'Heart' },
+      { category: 'parts_detail', name: '진주', value: 'Pearl' },
+      { category: 'parts_detail', name: '큐빅', value: 'Cubic' },
+      { category: 'parts_detail', name: '나비', value: 'Butterfly' },
+      { category: 'parts_detail', name: '체인', value: 'Chain' },
+      { category: 'point_placement', name: '엄지 포인트', value: 'Thumb' },
+      { category: 'point_placement', name: '약지 포인트', value: 'Ring Finger' },
+      { category: 'point_placement', name: '전체 랜덤', value: 'Random All' },
+      { category: 'point_placement', name: '퐁당퐁당', value: 'Alternating' }
+    ];
+
+    basicCategories.forEach(item => {
+      const exists = db.prepare("SELECT id FROM nail_elements WHERE category = ? AND name = ?").get(item.category, item.name);
+      if (!exists) {
+        db.prepare("INSERT INTO nail_elements (category, name, value) VALUES (?, ?, ?)").run(item.category, item.name, item.value);
+      }
+    });
+    console.log(">>> Basic nail elements migration completed.");
+
     // Sync point_color to point_color_right
     const pointColorsToSync = [
       { name: '실버', value: '#C0C0C0' },
@@ -143,6 +261,11 @@ async function startServer() {
       const insertTrigger = db.prepare("INSERT INTO category_triggers (trigger_category, trigger_value, target_category) VALUES (?, ?, ?)");
       insertTrigger.run('design', '자석젤', 'magnet_pattern');
       insertTrigger.run('design', '캐릭터네일', 'character');
+      insertTrigger.run('design', '자석젤', 'art_style');
+      insertTrigger.run('design', '시럽 네일', 'art_style');
+      insertTrigger.run('design', '치크 네일', 'art_style');
+      insertTrigger.run('design', '드로잉', 'art_style');
+      insertTrigger.run('design', '캐릭터네일', 'art_style');
       
       // Ensure '캐릭터네일' exists in design
       const hasCharNail = db.prepare("SELECT * FROM nail_elements WHERE category = 'design' AND name = '캐릭터네일'").get();
@@ -208,6 +331,20 @@ async function startServer() {
       insert.run('base_color', '더스티 로즈', '#BA7E7E');
       insert.run('base_color', '세이지 그린', '#9C9F84');
       insert.run('base_color', '모브', '#E0B0FF');
+      insert.run('base_color', '레몬 옐로우', '#FFF700');
+      insert.run('base_color', '아쿠아 블루', '#00FFFF');
+      insert.run('base_color', '라일락', '#DCD0FF');
+      insert.run('base_color', '피스타치오', '#93C572');
+      insert.run('base_color', '살구색', '#FBCEB1');
+      insert.run('base_color', '연그레이', '#E5E5E5');
+      insert.run('base_color', '딥 그린', '#013220');
+      insert.run('base_color', '네이비', '#000080');
+      insert.run('base_color', '초콜릿 브라운', '#7B3F00');
+      insert.run('base_color', '와인 레드', '#722F37');
+      insert.run('base_color', '올리브', '#808000');
+      insert.run('base_color', '테라코타', '#E2725B');
+      insert.run('base_color', '샌드', '#C2B280');
+      insert.run('base_color', '차콜', '#36454F');
       
       // Right hand versions for "Both hands different"
       insert.run('base_color_right', '밀키 화이트', '#F5F5F5');
@@ -223,6 +360,20 @@ async function startServer() {
       insert.run('base_color_right', '버터 옐로우', '#FFFD74');
       insert.run('base_color_right', '소프트 그레이', '#D3D3D3');
       insert.run('base_color_right', '누드 베이지', '#E3C1B4');
+      insert.run('base_color_right', '레몬 옐로우', '#FFF700');
+      insert.run('base_color_right', '아쿠아 블루', '#00FFFF');
+      insert.run('base_color_right', '라일락', '#DCD0FF');
+      insert.run('base_color_right', '피스타치오', '#93C572');
+      insert.run('base_color_right', '살구색', '#FBCEB1');
+      insert.run('base_color_right', '연그레이', '#E5E5E5');
+      insert.run('base_color_right', '딥 그린', '#013220');
+      insert.run('base_color_right', '네이비', '#000080');
+      insert.run('base_color_right', '초콜릿 브라운', '#7B3F00');
+      insert.run('base_color_right', '와인 레드', '#722F37');
+      insert.run('base_color_right', '올리브', '#808000');
+      insert.run('base_color_right', '테라코타', '#E2725B');
+      insert.run('base_color_right', '샌드', '#C2B280');
+      insert.run('base_color_right', '차콜', '#36454F');
 
       // 9. 포인트 컬러 (Point Color)
       insert.run('point_color', '실버', '#C0C0C0');
@@ -355,15 +506,6 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Health check at the very top
-  app.get("/api/health", (req, res) => {
-    res.json({ 
-      status: "ok", 
-      env: process.env.NODE_ENV,
-      time: new Date().toISOString()
-    });
-  });
-
   app.get("/ping", (req, res) => res.send("pong"));
 
   // Debug log for environment
@@ -372,6 +514,17 @@ async function startServer() {
   console.log(`>>> __dirname: ${__dirname}`);
 
   // API Routes
+  app.get("/api/health", (req, res) => {
+    res.json({ 
+      status: "ok", 
+      env: process.env.NODE_ENV,
+      cwd: process.cwd(),
+      distExists: fs.existsSync(path.resolve(__dirname, "dist")),
+      indexExists: fs.existsSync(path.resolve(__dirname, "dist", "index.html")),
+      time: new Date().toISOString()
+    });
+  });
+
   app.get("/api/elements", (req, res) => {
     const elements = db.prepare("SELECT * FROM nail_elements").all();
     res.json(elements);
@@ -446,23 +599,27 @@ async function startServer() {
     res.json(result);
   });
 
-  app.get("/api/health", (req, res) => {
-    res.json({ 
-      status: "ok", 
-      env: process.env.NODE_ENV,
-      cwd: process.cwd(),
-      dirname: __dirname,
-      distExists: fs.existsSync(path.resolve(__dirname, "dist")),
-      indexExists: fs.existsSync(path.resolve(__dirname, "dist", "index.html"))
-    });
+  app.get("/api/result-images", (req, res) => {
+    const images = db.prepare("SELECT * FROM result_images").all();
+    res.json(images);
+  });
+
+  app.post("/api/result-images", (req, res) => {
+    const { combination_json, image_url } = req.body;
+    const info = db.prepare("INSERT INTO result_images (combination_json, image_url) VALUES (?, ?)").run(combination_json, image_url);
+    res.json({ id: info.lastInsertRowid });
+  });
+
+  app.get("/api/result-images/:id", (req, res) => {
+    db.prepare("DELETE FROM result_images WHERE id = ?").run(req.params.id);
+    res.json({ success: true });
   });
 
   // Vite middleware or Static serving
   const distPath = path.resolve(__dirname, "dist");
-  const hasBuild = fs.existsSync(path.join(distPath, "index.html"));
   const isDev = process.env.NODE_ENV === "development";
 
-  if (isDev && !hasBuild) {
+  if (isDev) {
     console.log("Running in DEVELOPMENT mode with Vite...");
     try {
       const vite = await createViteServer({
@@ -475,27 +632,11 @@ async function startServer() {
       serveStatic(app, distPath);
     }
   } else {
-    console.log("Running in PRODUCTION/STATIC mode");
+    console.log("Running in PRODUCTION mode");
     serveStatic(app, distPath);
   }
 
-  app.get("/api/result-images", (req, res) => {
-  const images = db.prepare("SELECT * FROM result_images").all();
-  res.json(images);
-});
-
-app.post("/api/result-images", express.json(), (req, res) => {
-  const { combination_json, image_url } = req.body;
-  const info = db.prepare("INSERT INTO result_images (combination_json, image_url) VALUES (?, ?)").run(combination_json, image_url);
-  res.json({ id: info.lastInsertRowid });
-});
-
-app.delete("/api/result-images/:id", (req, res) => {
-  db.prepare("DELETE FROM result_images WHERE id = ?").run(req.params.id);
-  res.json({ success: true });
-});
-
-app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}`);
   });
 }
@@ -515,11 +656,17 @@ function serveStatic(app: express.Application, distPath: string) {
     if (fs.existsSync(indexPath)) {
       res.sendFile(indexPath);
     } else {
-      res.status(404).send(`
-        <h1>404 - Build Not Found</h1>
-        <p>The application is running but the build files are missing.</p>
-        <p>Please run 'npm run build' first.</p>
-      `);
+      // Fallback for SPA in root if dist/index.html is missing but root/index.html exists
+      const rootIndexPath = path.resolve(__dirname, "index.html");
+      if (fs.existsSync(rootIndexPath)) {
+        res.sendFile(rootIndexPath);
+      } else {
+        res.status(404).send(`
+          <h1>404 - Build Not Found</h1>
+          <p>The application is running but the build files are missing.</p>
+          <p>Please run 'npm run build' first.</p>
+        `);
+      }
     }
   });
 }

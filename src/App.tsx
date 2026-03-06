@@ -42,21 +42,27 @@ const CATEGORIES = [
   { id: 'parts_detail', name: '파츠 종류', conditional: true },
   { id: 'point_placement', name: '포인트 배치' },
   { id: 'finish', name: '마감' },
-  { id: 'art_style', name: '아트스타일' },
+  { id: 'art_style', name: '아트스타일', conditional: true },
   { id: 'lr_style', name: '좌우스타일' },
   { id: 'character', name: '캐릭터', conditional: true },
   { id: 'brand', name: '브랜드', hidden: true },
 ];
 
-const FIXED_CATEGORY_IDS = ['length', 'shape', 'design', 'base_color', 'finish'];
+const FIXED_CATEGORY_IDS: string[] = [];
 
 export default function App() {
   const [view, setView] = useState<'home' | 'admin'>('home');
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
+
+  const ADMIN_PASSWORD = 'J971213';
   const [elements, setElements] = useState<NailElement[]>([]);
   const [triggers, setTriggers] = useState<CategoryTrigger[]>([]);
   const [randomResult, setRandomResult] = useState<Record<string, NailElement> | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(['parts', 'mood', 'concept']);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['length', 'shape', 'color_tone', 'mood', 'concept', 'base_color', 'point_color', 'design', 'parts_yn', 'point_placement', 'finish', 'lr_style']);
   const [history, setHistory] = useState<Record<string, NailElement>[]>([]);
   const [resultImages, setResultImages] = useState<{id: number, combination_json: string, image_url: string}[]>([]);
 
@@ -70,7 +76,43 @@ export default function App() {
     fetchElements();
     fetchTriggers();
     fetchResultImages();
+
+    // URL-based view switching
+    if (window.location.pathname === '/admin') {
+      setShowPasswordPrompt(true);
+    }
   }, []);
+
+  useEffect(() => {
+    // Update URL when view changes
+    const newPath = view === 'admin' ? '/admin' : '/';
+    if (window.location.pathname !== newPath) {
+      window.history.pushState({}, '', newPath);
+    }
+  }, [view]);
+
+  const handleAdminToggle = () => {
+    if (view === 'admin') {
+      setView('home');
+    } else if (isAdminAuthenticated) {
+      setView('admin');
+    } else {
+      setShowPasswordPrompt(true);
+    }
+  };
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === ADMIN_PASSWORD) {
+      setIsAdminAuthenticated(true);
+      setShowPasswordPrompt(false);
+      setView('admin');
+      setPasswordError(false);
+      setPasswordInput('');
+    } else {
+      setPasswordError(true);
+    }
+  };
 
   const fetchResultImages = async () => {
     try {
@@ -260,13 +302,73 @@ export default function App() {
         </div>
         <div className="flex gap-4">
           <button 
-            onClick={() => setView(view === 'home' ? 'admin' : 'home')}
+            onClick={handleAdminToggle}
             className="p-2 rounded-full hover:bg-cherry/10 transition-colors text-cherry"
           >
             {view === 'home' ? <Settings size={24} /> : <Sparkles size={24} />}
           </button>
         </div>
       </nav>
+
+      {/* Password Prompt Modal */}
+      <AnimatePresence>
+        {showPasswordPrompt && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white kitsch-border p-8 w-full max-w-sm space-y-6 shadow-2xl"
+            >
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 bg-cherry/10 rounded-full flex items-center justify-center mx-auto">
+                  <Settings className="text-cherry" size={32} />
+                </div>
+                <h2 className="text-2xl font-black text-cherry">관리자 인증</h2>
+                <p className="text-sm text-stone-500 font-medium">관리자 페이지 접속을 위해 암호를 입력하세요.</p>
+              </div>
+
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <div className="space-y-1">
+                  <input
+                    type="password"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    placeholder="암호를 입력하세요"
+                    autoFocus
+                    className={`w-full p-4 kitsch-border focus:ring-2 focus:ring-cherry outline-none text-center font-bold tracking-widest ${passwordError ? 'border-red-500 animate-shake' : ''}`}
+                  />
+                  {passwordError && (
+                    <p className="text-xs text-red-500 font-bold text-center mt-2">암호가 틀렸습니다. 다시 확인해주세요!</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordPrompt(false);
+                      setPasswordInput('');
+                      setPasswordError(false);
+                      if (window.location.pathname === '/admin') {
+                        setView('home');
+                      }
+                    }}
+                    className="flex-1 p-4 font-bold text-stone-500 hover:bg-stone-100 transition-colors"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 p-4 bg-cherry text-white font-black hover:bg-cherry-dark transition-colors shadow-lg"
+                  >
+                    확인
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
         {view === 'home' ? (

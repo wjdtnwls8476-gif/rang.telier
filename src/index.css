@@ -19,3 +19,13 @@
 .kitsch-button {
   @apply bg-cherry text-white px-6 py-3 rounded-full font-bold text-lg hover:scale-105 transition-transform active:scale-95 shadow-md;
 }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.animate-shake {
+  animation: shake 0.2s ease-in-out 0s 2;
+}
